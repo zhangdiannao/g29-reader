@@ -5,6 +5,7 @@
 
 #include "LogitechSteeringWheelLib.h"
 #include <QDebug>
+#include <QThread>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
