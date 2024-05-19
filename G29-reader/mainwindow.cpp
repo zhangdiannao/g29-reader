@@ -2,11 +2,18 @@
 #include "ui_mainwindow.h"
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
+    : QMainWindow(parent), ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    connect(ui->connect,&QPushButton::clicked,this,&MainWindow::connectG29);
+    // 实例化对象
+    m_g29 = G29::getInterface();
+    m_g29->setIsInit(false);
+    m_tim0 = new QTimer(this);
+    m_tim0->setInterval(100); // 周期为500ms
+    // 绑定按钮到槽函数
+    connect(ui->connect, &QPushButton::clicked, this, &MainWindow::connectDevice);
+    // 绑定定时器到槽函数
+    connect(m_tim0, &QTimer::timeout, this, &MainWindow::tim0Handler);
 }
 
 MainWindow::~MainWindow()
@@ -14,41 +21,45 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::connectG29()
+void MainWindow::connectDevice()
 {
-    int retry = 10;
-    DIJOYSTATE2* g29State;
-    while(retry--)
+    if (!m_g29->isInit())
     {
-        if(LogiSteeringInitialize(false))
+        // 初始化
+        if (!m_g29->init())
         {
-            break;
+            qDebug() << "初始化失败!";
+            return;
         }
+        m_g29->setIsInit(true);
+        qDebug() << "初始化成功!";
     }
-    if(retry == 0)
+    m_tim0->start();
+}
+
+void MainWindow::tim0Handler()
+{
+    if (!m_g29->isConnected())
     {
-        qDebug() << "初始化失败!";
+        qDebug() << "设备断开连接!";
+        m_tim0->stop();
         return;
     }
-    qDebug() << "初始化成功";
-    while(LogiUpdate())
+    // 更新数据
+    if (!m_g29->update())
     {
-        /*
-         * bug:
-         * 这个LogiIsConnected函数，如果在运行过程中拔掉usb线，也不会返回false，导致检测不到G29断开连接。
-        */
-        if(!LogiIsConnected(0))
-        {
-            qDebug() << "G29已经断开连接!";
-            QThread::msleep(1000);
-            continue;
-        }
-        g29State = LogiGetState(0);
-        //打印读取到的数据
-        qDebug("%d %d %d",
-               g29State->lX,
-               g29State->lY,
-               g29State->lRz);
-        QThread::msleep(100);
+        qDebug() << "更新数据失败!";
+        return;
     }
+    // 打印数据
+    // qDebug() << "方向盘" << m_g29->m_data->lX
+    //          << "油门" << m_g29->m_data->lY
+    //          << "刹车" << m_g29->m_data->lRz;
+    /*
+    "刹车" << m_g29->m_data->lRz
+    "方向盘" << m_g29->m_data->lX
+    "油门" << m_g29->m_data->lY
+    "升档" << m_g29->m_data->rgbButtons[4]
+    "降档" << m_g29->m_data->rgbButtons[5]
+    */
 }
