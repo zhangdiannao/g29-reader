@@ -1,13 +1,15 @@
 #include "g29.h"
 
-G29 *G29::m_interface = nullptr;
+// 初始化单例对象
+G29 *G29::m_interface = NULL;
 
 G29::G29(QObject *parent)
     : QObject{parent}
 {
+    m_speed = 1;
+    m_exitFlag = 0;
 }
 
-// 返回单例对象
 G29 *G29::getInterface()
 {
     if (m_interface == NULL)
@@ -17,39 +19,92 @@ G29 *G29::getInterface()
     return m_interface;
 }
 
-// 初始化控制器
-bool G29::init()
+bool G29::initSDK()
 {
-    if (!LogiSteeringInitialize(false))
-    {
-        return false;
-    }
+    return LogiSteeringInitialize(false);
+}
+
+void G29::setSDKInitState(bool state)
+{
+    m_SDKInitState = state;
+}
+
+bool G29::getSDKInitState()
+{
+    return m_SDKInitState;
+}
+
+void G29::initDevice()
+{
     m_data = LogiGetState(0);
-    return true;
-}
-
-void G29::setIsInit(bool state)
-{
-    m_isInit = state;
-}
-
-// 获取控制器初始化状态
-bool G29::isInit()
-{
-    return m_isInit;
-}
-
-// 更新控制器数据
-bool G29::update()
-{
-    if (!LogiUpdate())
-    {
-        return false;
-    }
-    return true;
 }
 
 bool G29::isConnected()
 {
     return LogiIsConnected(0);
+}
+
+void G29::update()
+{
+    qDebug() << "更新设备数据运行在线程:" << QThread::currentThread();
+    while (true)
+    {
+        if (m_exitFlag || !isConnected())
+        {
+            qDebug() << "设备断开连接!";
+            emit deviceDisconnect();
+            return;
+        }
+        LogiUpdate();
+        QThread::msleep(10);
+    }
+}
+
+LONG G29::getDirection()
+{
+
+    return m_data->lX;
+}
+
+LONG G29::getPower()
+{
+    return m_data->lY;
+}
+
+LONG G29::getBrake()
+{
+    return m_data->lRz;
+}
+
+uint8_t G29::getSpeed()
+{
+    return m_speed;
+}
+
+void G29::speedUp()
+{
+    m_speed += 1;
+    if (m_speed == 3)
+    {
+        m_speed = 2;
+    }
+}
+
+void G29::speedDown()
+{
+    m_speed -= 1;
+    if (m_speed == -1)
+    {
+        m_speed = 0;
+    }
+}
+
+void G29::setExitFlag()
+{
+    m_exitFlag = 1;
+}
+
+void G29::shutDown()
+{
+    LogiSteeringShutdown();
 }
