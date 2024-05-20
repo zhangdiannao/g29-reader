@@ -82,11 +82,19 @@ void MainWindow::tim0Handler()
         return;
     }
     //更新控制器数据
-        LogiUpdate();
+    LogiUpdate();
+    //更新数据到UI界面
+    ui->val_direction->setValue(m_g29->getDirection());
+    ui->val_power->setValue(m_g29->getPower());
+    ui->val_brake->setValue(m_g29->getBrake());
+    ui->val_speed->setValue(m_g29->getSpeed());
+#if 0
     //打印控制器数据
     log(QString("%1 %2 %3 %4")
         .arg(m_g29->getDirection())
         .arg(m_g29->getPower())
         .arg(m_g29->getBrake())
         .arg(m_g29->getSpeed()));
+#endif
+
 }

@@ -7,6 +7,12 @@
 
 #define MAX_SPEED 2
 #define MIN_SPEED 0
+class G29_Button
+{
+public:
+    uint32_t pressTime;//被按下的次数
+    uint8_t lastState;//上一次状态
+};
 
 class G29 : public QObject
 {
