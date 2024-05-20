@@ -1,27 +1,16 @@
 #include "g29.h"
 
-// 初始化单例对象
-G29 *G29::m_interface = NULL;
-
 G29::G29(QObject *parent)
     : QObject{parent}
 {
+    m_SDKInitState = false;
+    m_dataAddr = NULL;
     m_speed = 1;
-    m_exitFlag = 0;
 }
 
-G29 *G29::getInterface()
+bool G29::init()
 {
-    if (m_interface == NULL)
-    {
-        m_interface = new G29();
-    }
-    return m_interface;
-}
-
-bool G29::initSDK()
-{
-    return LogiSteeringInitialize(false);
+    return false;
 }
 
 void G29::setSDKInitState(bool state)
@@ -34,54 +23,32 @@ bool G29::getSDKInitState()
     return m_SDKInitState;
 }
 
-void G29::initDataAddr()
+void G29::setDataAddr(DIJOYSTATE2 *addr)
 {
-    m_data = LogiGetStateENGINES(0);
+    m_dataAddr = addr;
 }
 
-bool G29::isDtaAddrIsNULL()
+bool G29::isDataAddrNULL()
 {
-    return (m_data == NULL) ? true : false;
+    return (m_dataAddr == NULL) ? true : false;
 }
 
-bool G29::isConnected()
+LONG G29::getDirection()
 {
-    return LogiIsConnected(0);
+    return m_dataAddr->lX;
 }
 
-void G29::update()
+LONG G29::getPower()
 {
-    qDebug() << "更新设备数据运行在线程:" << QThread::currentThread();
-    while (true)
-    {
-        if (m_exitFlag || !isConnected())
-        {
-            qDebug() << "设备断开连接!";
-            emit deviceDisconnect();
-            return;
-        }
-        LogiUpdate();
-        QThread::msleep(10);
-    }
+    return -(m_dataAddr->lY);
 }
 
-int G29::getDirection()
+LONG G29::getBrake()
 {
-
-    return m_data->lX;
+    return -(m_dataAddr->lRz);
 }
 
-int G29::getPower()
-{
-    return m_data->lY;
-}
-
-int G29::getBrake()
-{
-    return m_data->lRz;
-}
-
-char G29::getSpeed()
+int G29::getSpeed()
 {
     return m_speed;
 }
@@ -89,27 +56,17 @@ char G29::getSpeed()
 void G29::speedUp()
 {
     m_speed += 1;
-    if (m_speed == 3)
+    if (m_speed > MAX_SPEED)
     {
-        m_speed = 2;
+        m_speed = MAX_SPEED;
     }
 }
 
 void G29::speedDown()
 {
     m_speed -= 1;
-    if (m_speed == -1)
+    if (m_speed < MIN_SPEED)
     {
-        m_speed = 0;
+        m_speed = MIN_SPEED;
     }
-}
-
-void G29::setExitFlag()
-{
-    m_exitFlag = 1;
-}
-
-void G29::shutDown()
-{
-    LogiSteeringShutdown();
 }

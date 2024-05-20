@@ -2,44 +2,32 @@
 #include "ui_mainwindow.h"
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), ui(new Ui::MainWindow)
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    qDebug() << "主窗口运行在线程:" << QThread::currentThread();
-    // 实例化对象
-    m_g29 = G29::getInterface();
-    thread0 = new QThread(this);
+    //实例化对象
+    m_g29 = new G29(this);
     m_tim0 = new QTimer(this);
-    /*g29*/
-    // 绑定对象和线程
-    m_g29->moveToThread(thread0);
-    // 开启线程
-    thread0->start();
-    /*tim0*/
-    m_tim0->setInterval(100);
-    // 绑定tim和槽函数
-    connect(m_tim0, &QTimer::timeout, this, &MainWindow::tim0Handler);
-    // 绑定按钮和槽函数
-    buttonInit();
-    // 绑定信号和槽函数
-    connect(this, &MainWindow::updateDevice, m_g29, &G29::update);
-    connect(m_g29, &G29::deviceDisconnect, this, [=]()
-            {
-                showLog("设备断开连接!");
-                ui->connectDevice->setEnabled(true);
-                m_tim0->stop(); });
-    connect(this, &MainWindow::destroyed, this, [=]()
-            {
-                qDebug() << "销毁线程...";
-                m_g29->setExitFlag();
-                thread0->exit();
-                thread0->wait();
-                thread0->deleteLater();
-                qDebug() << "销毁完毕!";
-                qDebug() << "销毁实例化的对象...";
-                m_g29->shutDown();
-                m_g29->deleteLater();
-                qDebug() << "销毁完毕!"; });
+
+    //配置定时器
+    m_tim0->setInterval(33);//一秒执行30次
+
+
+
+    //连接信号和槽函数
+    connect(ui->button_init,&QPushButton::clicked,this,&MainWindow::deviceInit);
+    connect(m_tim0,&QTimer::timeout,this,&MainWindow::tim0Handler);
+
+
+    /*窗口销毁后动作:
+     * 这个只能Lambda表达式，用mainwindow的槽函数执行会报错
+    */
+    connect(this,&MainWindow::destroyed,this,[=]()
+    {
+        //手动释放G29相关资源
+        LogiSteeringShutdown();
+    });
 }
 
 MainWindow::~MainWindow()
@@ -47,54 +35,58 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::buttonInit()
+void MainWindow::deviceInit()
 {
-    connect(ui->initSDK, &QPushButton::clicked, this, &MainWindow::SDKInit);
-    connect(ui->connectDevice, &QPushButton::clicked, this, &MainWindow::connectDevice);
-}
+    //初始化SDK，SDK只需要初始化一次
+    if(!m_g29->getSDKInitState())
+    {
+        if(!LogiSteeringInitializeWithWindow(true,(HWND)winId()))
+        {
+            log("SDK初始化失败!");
+            return;
+        }
+        m_g29->setSDKInitState(true);
+    }
 
-void MainWindow::SDKInit()
-{
-    if (!m_g29->getSDKInitState() && !m_g29->initSDK())
-    {
-        showLog("[ERROR]初始化SKD失败!");
-        return;
-    }
-    showLog("[INFO]初始化SDK成功!");
-    m_g29->setSDKInitState(true);
-    // 获取设备数据地址
-    m_g29->initDataAddr();
-    if (m_g29->isDtaAddrIsNULL())
-    {
-        showLog("[ERROR]初始化设备数据地址失败!");
-        return;
-    }
-    ui->initSDK->setEnabled(false);
-}
+    log("SDK初始化成功!");
 
-void MainWindow::connectDevice()
-{
-    if (!m_g29->getSDKInitState())
+    if(!LogiIsConnected(0))
     {
-        showLog("[ERROR]SDK未初始化!\n");
+        log("设备未连接!");
         return;
     }
-    ui->connectDevice->setEnabled(false);
+    DIJOYSTATE2* temp = LogiGetState(0);
+    if(!temp)
+    {
+        log("获取设备数据地址失败!");
+        return;
+    }
+    m_g29->setDataAddr(temp);
+    log("获取设备数据地址成功!");
+    log("设备连接成功!");
     m_tim0->start();
-    emit updateDevice();
 }
 
-void MainWindow::connectServer()
-{
-}
-
-void MainWindow::showLog(const QString &str)
+void MainWindow::log(const QString &str)
 {
     ui->logBrowser->append(str);
 }
 
 void MainWindow::tim0Handler()
 {
-    // 打印数据
-    qDebug("add:%X", m_g29->getDirection());
+    //检查连接状态
+    if(!LogiIsConnected(0))
+    {
+        log("设备断开连接!");
+        m_tim0->stop();
+        return;
+    }
+    //更新控制器数据
+        LogiUpdate();
+    //打印控制器数据
+    log(QString("%1 %2 %3 %4")
+        .arg(m_g29->getDirection())
+        .arg(m_g29->getPower())
+        .arg(m_g29->getBrake())
+        .arg(m_g29->getSpeed()));
 }

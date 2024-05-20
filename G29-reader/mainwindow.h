@@ -3,11 +3,9 @@
 
 #include <QMainWindow>
 #include <QDebug>
-#include <QThread>
+#include <g29.h>
 #include <LogitechSteeringWheelLib.h>
 #include <QTimer>
-#include <g29.h>
-#include <QThread>
 
 QT_BEGIN_NAMESPACE
 namespace Ui
@@ -23,25 +21,18 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-    // 绑定按钮与槽函数
-    void buttonInit();
-    // 初始化SDK
-    void SDKInit();
-    // 连接设备
-    void connectDevice();
-    // 连接服务器
-    void connectServer();
+
+    // 初始化设备
+    void deviceInit();
     // 输出日志
-    void showLog(const QString &str);
-    // tim0周期事件
+    void log(const QString &str);
+    //定时器0周期事件
     void tim0Handler();
-signals:
-    void updateDevice();
 
 private:
     Ui::MainWindow *ui;
     G29 *m_g29;
-    QThread *thread0;
+    DIJOYSTATE2 *m_data;
     QTimer *m_tim0;
 };
 #endif // MAINWINDOW_H
