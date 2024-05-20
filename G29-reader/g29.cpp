@@ -34,9 +34,14 @@ bool G29::getSDKInitState()
     return m_SDKInitState;
 }
 
-void G29::initDevice()
+void G29::initDataAddr()
 {
-    m_data = LogiGetState(0);
+    m_data = LogiGetStateENGINES(0);
+}
+
+bool G29::isDtaAddrIsNULL()
+{
+    return (m_data == NULL) ? true : false;
 }
 
 bool G29::isConnected()
@@ -60,23 +65,23 @@ void G29::update()
     }
 }
 
-LONG G29::getDirection()
+int G29::getDirection()
 {
 
     return m_data->lX;
 }
 
-LONG G29::getPower()
+int G29::getPower()
 {
     return m_data->lY;
 }
 
-LONG G29::getBrake()
+int G29::getBrake()
 {
     return m_data->lRz;
 }
 
-uint8_t G29::getSpeed()
+char G29::getSpeed()
 {
     return m_speed;
 }

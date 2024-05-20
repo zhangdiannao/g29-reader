@@ -19,19 +19,21 @@ public:
     // 获取初始化状态
     bool getSDKInitState();
     // 初始化设备数据地址
-    void initDevice();
+    void initDataAddr();
+    // 设备数据地址是否未空
+    bool isDtaAddrIsNULL();
     // 获取设备连接状态
     bool isConnected();
     // 更新设备数据
     void update();
     // 获取方向盘角度原始数据
-    LONG getDirection();
+    int getDirection();
     // 获取油门原始数据
-    LONG getPower();
+    int getPower();
     // 获取刹车原始数据
-    LONG getBrake();
+    int getBrake();
     // 获取挡位数据
-    uint8_t getSpeed();
+    char getSpeed();
     // 升档
     void speedUp();
     // 降档
@@ -51,7 +53,7 @@ private:
     // 初始化状态
     bool m_SDKInitState;
     // 设备数据地址
-    DIJOYSTATE2 *m_data;
+    DIJOYSTATE2ENGINES *m_data;
     // 挡位
     char m_speed;
     // 线程退出标志

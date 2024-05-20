@@ -11,8 +11,6 @@ MainWindow::MainWindow(QWidget *parent)
     thread0 = new QThread(this);
     m_tim0 = new QTimer(this);
     /*g29*/
-    // 初始化设备
-    m_g29->initDevice();
     // 绑定对象和线程
     m_g29->moveToThread(thread0);
     // 开启线程
@@ -20,7 +18,7 @@ MainWindow::MainWindow(QWidget *parent)
     /*tim0*/
     m_tim0->setInterval(100);
     // 绑定tim和槽函数
-    connect(m_tim0, &QTimer::timeout,this,&MainWindow::tim0Handler);
+    connect(m_tim0, &QTimer::timeout, this, &MainWindow::tim0Handler);
     // 绑定按钮和槽函数
     buttonInit();
     // 绑定信号和槽函数
@@ -29,7 +27,7 @@ MainWindow::MainWindow(QWidget *parent)
             {
                 showLog("设备断开连接!");
                 ui->connectDevice->setEnabled(true);
-                m_tim0->stop();});
+                m_tim0->stop(); });
     connect(this, &MainWindow::destroyed, this, [=]()
             {
                 qDebug() << "销毁线程...";
@@ -57,16 +55,21 @@ void MainWindow::buttonInit()
 
 void MainWindow::SDKInit()
 {
-    if (m_g29->initSDK())
-    {
-        showLog("[INFO]初始化SDK成功!");
-        m_g29->setSDKInitState(true);
-        ui->initSDK->setEnabled(false);
-    }
-    else
+    if (!m_g29->getSDKInitState() && !m_g29->initSDK())
     {
         showLog("[ERROR]初始化SKD失败!");
+        return;
     }
+    showLog("[INFO]初始化SDK成功!");
+    m_g29->setSDKInitState(true);
+    // 获取设备数据地址
+    m_g29->initDataAddr();
+    if (m_g29->isDtaAddrIsNULL())
+    {
+        showLog("[ERROR]初始化设备数据地址失败!");
+        return;
+    }
+    ui->initSDK->setEnabled(false);
 }
 
 void MainWindow::connectDevice()
@@ -77,8 +80,8 @@ void MainWindow::connectDevice()
         return;
     }
     ui->connectDevice->setEnabled(false);
-    emit updateDevice();
     m_tim0->start();
+    emit updateDevice();
 }
 
 void MainWindow::connectServer()
@@ -92,10 +95,6 @@ void MainWindow::showLog(const QString &str)
 
 void MainWindow::tim0Handler()
 {
-    //打印数据
-    showLog(QString("%1,%2,%3,%4")
-                .arg(m_g29->getDirection())
-                .arg(m_g29->getPower())
-                .arg(m_g29->getBrake())
-                .arg(m_g29->getSpeed()));
+    // 打印数据
+    qDebug("add:%X", m_g29->getDirection());
 }
