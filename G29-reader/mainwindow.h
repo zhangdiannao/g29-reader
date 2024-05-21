@@ -7,6 +7,7 @@
 #include <LogitechSteeringWheelLib.h>
 #include <QTimer>
 #include <QThread>
+#include <QSoundEffect>
 
 QT_BEGIN_NAMESPACE
 namespace Ui
@@ -35,5 +36,6 @@ private:
     G29 *m_g29;
     DIJOYSTATE2 *m_data;
     QTimer *m_tim0;
+    QSoundEffect* m_effect;
 };
 #endif // MAINWINDOW_H

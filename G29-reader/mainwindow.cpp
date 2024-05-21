@@ -9,11 +9,15 @@ MainWindow::MainWindow(QWidget *parent)
     //实例化对象
     m_g29 = new G29(this);
     m_tim0 = new QTimer(this);
+    m_effect = new QSoundEffect(this);
 
     //配置定时器
     m_tim0->setInterval(33);//一秒执行30次
 
-
+    //配置提示音
+    m_effect->setSource(QUrl::fromLocalFile(":/res/audio0.wav"));
+    m_effect->setLoopCount(1);
+    m_effect->setVolume(100);
 
     //连接信号和槽函数
     connect(ui->button_init,&QPushButton::clicked,this,&MainWindow::deviceInit);
@@ -24,12 +28,12 @@ MainWindow::MainWindow(QWidget *parent)
      * 这个只能Lambda表达式，用mainwindow的槽函数执行会报错
     */
     connect(this,&MainWindow::destroyed,this,[=]()
-    {
-        //手动释放G29相关资源
-        LogiSteeringShutdown();
-        m_g29->setSDKInitState(false);
-        m_g29->setSDKInitState(false);
-    });
+            {
+                //手动释放G29相关资源
+                LogiSteeringShutdown();
+                m_g29->setSDKInitState(false);
+                m_g29->setSDKInitState(false);
+            });
 }
 
 MainWindow::~MainWindow()
@@ -121,12 +125,14 @@ void MainWindow::tim0Handler()
     {
         m_g29->speedUp();
         log("升档!");
+        m_effect->play();
         m_g29->m_up.lastState = false;
     }
     if(m_g29->getspeedDownButtonState() == false && m_g29->m_down.lastState == true)
     {
         m_g29->speedDown();
         log("降档!");
+        m_effect->play();
         m_g29->m_down.lastState = false;
     }
     /*********/
