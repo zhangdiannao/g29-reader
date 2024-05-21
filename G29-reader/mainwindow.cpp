@@ -28,6 +28,7 @@ MainWindow::MainWindow(QWidget *parent)
         //手动释放G29相关资源
         LogiSteeringShutdown();
         m_g29->setSDKInitState(false);
+        m_g29->setSDKInitState(false);
     });
 }
 
@@ -85,11 +86,50 @@ void MainWindow::tim0Handler()
         //手动释放G29相关资源
         LogiSteeringShutdown();
         m_g29->setSDKInitState(false);
+        m_g29->setSpringState(false);
         m_tim0->stop();
         return;
     }
     //更新控制器数据
     LogiUpdate();
+    //配置中心弹簧(回正力度)
+    if(!m_g29->getSprinfState())
+    {
+        if(LogiPlaySpringForce(0,0,60,60))
+        {
+            log("配置回正力度成功!");
+            m_g29->setSpringState(true);
+        }else
+        {
+            log("配置回正力度失败!");
+        }
+    }
+
+    /*按钮检测*/
+    if(m_g29->getspeedUpButtonState())
+    {
+        m_g29->m_up.pressTime++;
+        m_g29->m_up.lastState = true;
+    }
+    if(m_g29->getspeedDownButtonState())
+    {
+        m_g29->m_down.pressTime++;
+        m_g29->m_down.lastState = true;
+    }
+    //松手检测
+    if(m_g29->getspeedUpButtonState() == false && m_g29->m_up.lastState == true)
+    {
+        m_g29->speedUp();
+        log("升档!");
+        m_g29->m_up.lastState = false;
+    }
+    if(m_g29->getspeedDownButtonState() == false && m_g29->m_down.lastState == true)
+    {
+        m_g29->speedDown();
+        log("降档!");
+        m_g29->m_down.lastState = false;
+    }
+    /*********/
     //更新数据到UI界面
     ui->val_direction->setValue(m_g29->getDirection());
     ui->val_power->setValue(m_g29->getPower());

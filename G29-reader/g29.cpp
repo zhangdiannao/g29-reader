@@ -4,6 +4,7 @@ G29::G29(QObject *parent)
     : QObject{parent}
 {
     m_SDKInitState = false;
+    m_springState = false;
     m_dataAddr = NULL;
     m_speed = 1;
 }
@@ -69,4 +70,24 @@ void G29::speedDown()
     {
         m_speed = MIN_SPEED;
     }
+}
+
+void G29::setSpringState(bool state)
+{
+    m_springState = state;
+}
+
+bool G29::getSprinfState()
+{
+    return m_springState;
+}
+
+bool G29::getspeedUpButtonState()
+{
+    return m_dataAddr->rgbButtons[4] ? true : false;
+}
+
+bool G29::getspeedDownButtonState()
+{
+   return m_dataAddr->rgbButtons[5] ? true : false;
 }

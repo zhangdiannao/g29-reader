@@ -6,6 +6,7 @@
 #include <g29.h>
 #include <LogitechSteeringWheelLib.h>
 #include <QTimer>
+#include <QThread>
 
 QT_BEGIN_NAMESPACE
 namespace Ui

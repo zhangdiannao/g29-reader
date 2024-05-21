@@ -10,8 +10,13 @@
 class G29_Button
 {
 public:
-    uint32_t pressTime;//被按下的次数
-    uint8_t lastState;//上一次状态
+    uint32_t pressTime;//被检测到按下的时间
+    bool lastState;//上一次状态
+    G29_Button()
+    {
+        pressTime = 0;
+        lastState = false;
+    }
 };
 
 class G29 : public QObject
@@ -19,6 +24,11 @@ class G29 : public QObject
     Q_OBJECT
 public:
     explicit G29(QObject *parent = nullptr);
+
+    /*控制器按钮*/
+    G29_Button m_up;
+    G29_Button m_down;
+    /***********/
     // 初始化控制器
     bool init();
     // 设置SDK初始化状态
@@ -41,11 +51,20 @@ public:
     void speedUp();
     // 降挡
     void speedDown();
+    //设置回正状态
+    void setSpringState(bool state);
+    //获取回正状态
+    bool getSprinfState();
+    //获取升档拨片的状态
+    bool getspeedUpButtonState();
+    //获取降档拨片的状态
+    bool getspeedDownButtonState();
 signals:
 private:
     bool m_SDKInitState;
     DIJOYSTATE2 *m_dataAddr;
     int m_speed; // 当前挡位
+    bool m_springState;//回正状态
 };
 
 #endif // G29_H
