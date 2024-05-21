@@ -27,6 +27,7 @@ MainWindow::MainWindow(QWidget *parent)
     {
         //手动释放G29相关资源
         LogiSteeringShutdown();
+        m_g29->setSDKInitState(false);
     });
 }
 
@@ -53,6 +54,9 @@ void MainWindow::deviceInit()
     if(!LogiIsConnected(0))
     {
         log("设备未连接!");
+        //手动释放G29相关资源
+        LogiSteeringShutdown();
+        m_g29->setSDKInitState(false);
         return;
     }
     DIJOYSTATE2* temp = LogiGetState(0);
@@ -78,6 +82,9 @@ void MainWindow::tim0Handler()
     if(!LogiIsConnected(0))
     {
         log("设备断开连接!");
+        //手动释放G29相关资源
+        LogiSteeringShutdown();
+        m_g29->setSDKInitState(false);
         m_tim0->stop();
         return;
     }
