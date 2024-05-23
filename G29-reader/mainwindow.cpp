@@ -22,18 +22,24 @@ MainWindow::MainWindow(QWidget *parent)
     //连接信号和槽函数
     connect(ui->button_init,&QPushButton::clicked,this,&MainWindow::deviceInit);
     connect(m_tim0,&QTimer::timeout,this,&MainWindow::tim0Handler);
+    connect(ui->button_disconnect_device,&QPushButton::clicked,this,&MainWindow::deviceDeInit);
+    connect(ui->button_exit,&QPushButton::clicked,this,[=]()
+    {
+        deviceDeInit();
+        this->close();
+    });
 
 
     /*窗口销毁后动作:
      * 这个只能Lambda表达式，用mainwindow的槽函数执行会报错
     */
     connect(this,&MainWindow::destroyed,this,[=]()
-            {
-                //手动释放G29相关资源
-                LogiSteeringShutdown();
-                m_g29->setSDKInitState(false);
-                m_g29->setSDKInitState(false);
-            });
+    {
+        //手动释放G29相关资源
+        LogiSteeringShutdown();
+        m_g29->setSDKInitState(false);
+        m_g29->setSpringState(false);
+    });
 }
 
 MainWindow::~MainWindow()
@@ -60,8 +66,7 @@ void MainWindow::deviceInit()
     {
         log("设备未连接!");
         //手动释放G29相关资源
-        LogiSteeringShutdown();
-        m_g29->setSDKInitState(false);
+        deviceDeInit();
         return;
     }
     DIJOYSTATE2* temp = LogiGetState(0);
@@ -76,6 +81,16 @@ void MainWindow::deviceInit()
     m_tim0->start();
 }
 
+void MainWindow::deviceDeInit()
+{
+    //手动释放G29相关资源
+    LogiSteeringShutdown();
+    m_g29->setSDKInitState(false);
+    m_g29->setSpringState(false);
+    m_tim0->stop();
+    log("释放G29相关资源 OK!");
+}
+
 void MainWindow::log(const QString &str)
 {
     ui->logBrowser->append(str);
@@ -88,10 +103,7 @@ void MainWindow::tim0Handler()
     {
         log("设备断开连接!");
         //手动释放G29相关资源
-        LogiSteeringShutdown();
-        m_g29->setSDKInitState(false);
-        m_g29->setSpringState(false);
-        m_tim0->stop();
+        deviceDeInit();
         return;
     }
     //更新控制器数据

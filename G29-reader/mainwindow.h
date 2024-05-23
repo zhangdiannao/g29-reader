@@ -26,6 +26,8 @@ public:
 
     // 初始化设备
     void deviceInit();
+    //删除设备
+    void deviceDeInit();
     // 输出日志
     void log(const QString &str);
     //定时器0周期事件
