@@ -26,6 +26,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->button_exit,&QPushButton::clicked,this,[=]()
     {
         deviceDeInit();
+        /*这里用destory()线程不会退出*/
         this->close();
     });
 
@@ -35,6 +36,7 @@ MainWindow::MainWindow(QWidget *parent)
     */
     connect(this,&MainWindow::destroyed,this,[=]()
     {
+        /*这里用deviceDeInit()会导致崩溃*/
         //手动释放G29相关资源
         LogiSteeringShutdown();
         m_g29->setSDKInitState(false);
@@ -153,7 +155,7 @@ void MainWindow::tim0Handler()
     ui->val_power->setValue(m_g29->getPower());
     ui->val_brake->setValue(m_g29->getBrake());
     ui->val_speed->setValue(m_g29->getSpeed());
-#if 0
+#if 1
     //打印控制器数据
     log(QString("%1 %2 %3 %4")
         .arg(m_g29->getDirection())
